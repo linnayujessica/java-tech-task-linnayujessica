@@ -16,36 +16,76 @@ public class LunchService {
     private EntityManager entityManager;
 
     private List<Recipe> recipesSorted;
+    private LocalDate inputDate;
 
     public List<Recipe> getNonExpiredRecipesOnDate(LocalDate date) {
+        inputDate = date;
         List<Recipe> recipes = loadRecipes(date);
-
         sortRecipes(recipes);
-
         return recipesSorted;
     }
 
     private void sortRecipes(List<Recipe> recipes) {
-        recipesSorted = recipes; //TODO sort recipes considering best-before
+        recipesSorted = new ArrayList<>();
+        for(Recipe i : recipes) recipesSorted.add(i);
+        // check any ingredients in recipe are past bestBefore
+        for(Recipe recipe : recipes) {
+            List<Ingredient> ingredients = recipe.getIngredients();
+            long count  = ingredients.stream().filter(s -> s.getBestBefore().isBefore(inputDate)).count();
+            if(count!=0) {
+                recipesSorted.remove(recipe);
+                recipesSorted.add(recipe);
+            }
+        }
     }
 
-    public List<Recipe> loadRecipes(LocalDate date) {
+    private List<Recipe> loadRecipes(LocalDate date) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Recipe> criteriaQuery = cb.createQuery(Recipe.class);
         Root<Recipe> recipeRoot = criteriaQuery.from(Recipe.class);
 
         CriteriaQuery<Recipe> query = criteriaQuery.select(recipeRoot);
 
-        Subquery<Recipe> nonExpiredIngredientSubquery = query.subquery(Recipe.class);
-        Root<Recipe> nonExpiredIngredient = nonExpiredIngredientSubquery.from(Recipe.class);
-        nonExpiredIngredientSubquery.select(nonExpiredIngredient);
+        Subquery<Recipe> expiredIngredientSubquery = query.subquery(Recipe.class);
+        Root<Recipe> expiredIngredient = expiredIngredientSubquery.from(Recipe.class);
+        expiredIngredientSubquery.select(expiredIngredient);
 
-        Predicate matchingRecipe = cb.equal(nonExpiredIngredient.get("title"), recipeRoot.get("title"));
-        Predicate expiredIngredient = cb.lessThan(nonExpiredIngredient.join("ingredients").get("useBy"), date);
+        Predicate matchingRecipe = cb.equal(expiredIngredient.get("title"), recipeRoot.get("title"));
+        Predicate expiredRecipeIngredient = cb.lessThan(expiredIngredient.join("ingredients").get("useBy"), date);
 
-        Predicate allNonExpiredIngredients = cb.exists(nonExpiredIngredientSubquery.where(matchingRecipe, expiredIngredient));
-
-        return entityManager.createQuery(query.where(allNonExpiredIngredients)).getResultList();
+        Predicate allExpiredIngredients = cb.exists(expiredIngredientSubquery.where(matchingRecipe, expiredRecipeIngredient));
+        List expiredRecipes = entityManager.createQuery(query.where(allExpiredIngredients)).getResultList();
+        List nonExpiredRecipes = allRecipes();
+        nonExpiredRecipes.removeAll(expiredRecipes);
+        return nonExpiredRecipes;
     }
 
+    public Recipe getRecipeByTitle(String title) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Recipe> criteriaQuery = cb.createQuery(Recipe.class);
+        Root<Recipe> recipeRoot = criteriaQuery.from(Recipe.class);
+        CriteriaQuery<Recipe> query = criteriaQuery.select(recipeRoot);
+        return entityManager.createQuery(query.where(cb.equal(recipeRoot.get("title"), title))).getSingleResult();
+    }
+
+    public List<Recipe> filterRecipes(List<Ingredient> ingredients) {
+        Recipe recipeFiltered = new Recipe();
+        List<Recipe> recipes = allRecipes();
+        for(Recipe recipe : recipes) {
+            if(ingredients.equals(recipe.getIngredients())) {
+                recipeFiltered = recipe;
+            }
+        }
+        recipes.remove(recipeFiltered);
+        return recipes;
+    }
+
+    public List<Recipe> allRecipes() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Recipe> criteriaQuery = cb.createQuery(Recipe.class);
+        Root<Recipe> recipeRoot = criteriaQuery.from(Recipe.class);
+
+        criteriaQuery.select(recipeRoot);
+        return entityManager.createQuery(criteriaQuery).getResultList();
+    }
 }

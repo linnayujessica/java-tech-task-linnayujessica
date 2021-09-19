@@ -10,6 +10,7 @@ The service provides an endpoint that will determine, from a set of recipes, wha
 *Note: Docker is used for the local MySQL database instance, feel free to use your own instance or any other SQL database and insert data from lunch-data.sql script* 
 
 
+
 ### Run
 
 1. Start database:
