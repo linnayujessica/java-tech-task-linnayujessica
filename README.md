@@ -2,14 +2,10 @@
 
 The service provides an endpoint that will determine, from a set of recipes, what I can have for lunch at a given date, based on my fridge ingredient's expiry date, so that I can quickly decide what I’ll be having to eat, and the ingredients required to prepare the meal.
 
-## Prerequisites
+### Prerequisites
 
-* [Java 11 Runtime](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
+* [Java 11 or 14 Runtime](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html) (except version 11.0.11 and above)
 * [Docker](https://docs.docker.com/get-docker/) & [Docker-Compose](https://docs.docker.com/compose/install/)
-
-*Note: Docker is used for the local MySQL database instance, feel free to use your own instance or any other SQL database and insert data from lunch-data.sql script* 
-
-
 
 ### Run
 
@@ -35,3 +31,23 @@ The service provides an endpoint that will determine, from a set of recipes, wha
     ```
     
 3. Run Springboot LunchApplication
+
+### API specification
+
+1. `GET`  /lunch?date={format:yyyy-mm-dd}
+
+```
+curl -v http://localhost:8080/lunch?date=2021-01-01
+```
+
+2. `GET`  /recipe?title={recipe_title}
+
+```
+curl -v http://localhost:8080/recipe?title=Salad
+```
+
+3. `POST`  /exclude
+
+```
+curl -d '[{"title": "Beetroot","bestBefore": "2030-12-31","useBy": "2030-01-01"},{"title": "Cucumber","bestBefore": "2030-12-31","useBy": "2030-01-01"},{"title": "Lettuce","bestBefore": "2030-12-31","useBy": "2030-01-01"},{"title": "Salad Dressing","bestBefore": "2030-12-31","useBy": "1999-01-01"},{"title": "Tomato","bestBefore": "2030-12-31","useBy": "2030-01-01"}]' -H 'Content-Type: application/json' http://localhost:8080/exclude
+```
