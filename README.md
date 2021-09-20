@@ -4,7 +4,7 @@ The service provides an endpoint that will determine, from a set of recipes, wha
 
 ### Prerequisites
 
-* [Java 11 or 14 Runtime](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html) (except version 11.0.11 and above)
+* [Java 11 or 14 Runtime](https://www.oracle.com/java/technologies/downloads/) (except version 11.0.11 and above)
 * [Docker](https://docs.docker.com/get-docker/) & [Docker-Compose](https://docs.docker.com/compose/install/)
 
 ### Run
@@ -34,20 +34,33 @@ The service provides an endpoint that will determine, from a set of recipes, wha
 
 ### API specification
 
-1. `GET`  /lunch?date={format:yyyy-mm-dd}
+1. **`GET`  /lunch?date={format:yyyy-mm-dd}**
+    
+    return a list of recipes with ingredients and its `useBy` is not past the provided date, it's sorted by `bestBefore` and any recipe containing this               ingredient which `bestBefore` is past the provided date should be the botton of JSON response
 
 ```
 curl -v http://localhost:8080/lunch?date=2021-01-01
 ```
 
-2. `GET`  /recipe?title={recipe_title}
+2. **`GET`  /recipe?title={recipe_title}**
+
+    return a specific recipe object selected by its `title`; otherwise, return 404 Recipe Not Found
 
 ```
 curl -v http://localhost:8080/recipe?title=Salad
 ```
 
-3. `POST`  /exclude
+3. **`POST`  /exclude** 
+
+    return a list of recipes to exclude by the provided set of ingredients from request body
 
 ```
-curl -d '[{"title": "Beetroot","bestBefore": "2030-12-31","useBy": "2030-01-01"},{"title": "Cucumber","bestBefore": "2030-12-31","useBy": "2030-01-01"},{"title": "Lettuce","bestBefore": "2030-12-31","useBy": "2030-01-01"},{"title": "Salad Dressing","bestBefore": "2030-12-31","useBy": "1999-01-01"},{"title": "Tomato","bestBefore": "2030-12-31","useBy": "2030-01-01"}]' -H 'Content-Type: application/json' http://localhost:8080/exclude
+curl -d '[
+{"title": "Beetroot","bestBefore": "2030-12-31","useBy": "2030-01-01"},
+{"title": "Cucumber","bestBefore": "2030-12-31","useBy": "2030-01-01"},
+{"title": "Lettuce","bestBefore": "2030-12-31","useBy": "2030-01-01"},
+{"title": "Salad Dressing","bestBefore": "2030-12-31","useBy": "1999-01-01"},
+{"title": "Tomato","bestBefore": "2030-12-31","useBy": "2030-01-01"}
+]' 
+-H 'Content-Type: application/json' http://localhost:8080/exclude
 ```
